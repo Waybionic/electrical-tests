@@ -26,7 +26,7 @@ void loop() {
   buttonState2 = digitalRead(buttonPin2);
 
   if (buttonState1 == HIGH && buttonState2 != HIGH) {
-    stepper1.step(1); //screw around w this
+    stepper1.step(1);
   }
   else if (buttonState2 == HIGH && buttonState1 != HIGH) {
     stepper1.step(-1);
