@@ -10,8 +10,6 @@
 #include "Encoding.h"
 #include "WiFiS3.h"
 
-#include <Stepper.h>
-
 char ssid[] = "CHANGE_ME_SSID";      // your network SSID (name)
 char pass[] = "CHANGE_ME_PASSWORD"; // your network password (use for WPA, or use as key for WEP)
 
