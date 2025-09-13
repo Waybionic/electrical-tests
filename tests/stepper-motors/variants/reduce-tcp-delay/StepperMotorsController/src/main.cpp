@@ -1,14 +1,16 @@
 // This code is for the sender of rotation coordinates to the arduino
 
-#define SERVO_1_ANALOG A3
-#define SERVO_2_ANALOG A2
-#define SERVO_3_ANALOG A1
+#define STEPPER_1_ANALOG A3
+#define STEPPER_2_ANALOG A2
+#define STEPPER_3_ANALOG A1
 
 #include "Arduino.h"
 #include "JoystickReader.h"
 #include "ButtonIncrementPair.h"
 #include "Encoding.h"
 #include "WiFiS3.h"
+
+#include <Stepper.h>
 
 char ssid[] = "CHANGE_ME_SSID";      // your network SSID (name)
 char pass[] = "CHANGE_ME_PASSWORD"; // your network password (use for WPA, or use as key for WEP)
@@ -20,9 +22,9 @@ IPAddress accessPointIP(192, 168, 4, 1); // IP address of the access point
 unsigned int remotePort = 8888;          // local port to listen for UDP packets
 unsigned int localPort = 2390;           // local port to listen for UDP packets
 
-JoystickReader joystickReaderServo1(0, 180, false);
-JoystickReader joystickReaderServo2(45, 90, false);
-JoystickReader joystickReaderServo3(130, 130, true);
+JoystickReader joystickReaderStepper1(0, 180, false);
+JoystickReader joystickReaderStepper2(45, 90, false);
+JoystickReader joystickReaderStepper3(130, 130, true);
 ButtonIncrementPair buttonIncrementPair4 = {0, (const uint8_t[]){6, 5}, (bool[]){false, false}}; // Button on pin 4, increment on pin 3, increment value 1
 
 WiFiUDP Udp;
@@ -37,9 +39,9 @@ bool isConnected()
 void initializeReaders()
 {
 
-  joystickReaderServo1.setUp(SERVO_1_ANALOG);
-  joystickReaderServo2.setUp(SERVO_2_ANALOG);
-  joystickReaderServo3.setUp(SERVO_3_ANALOG);
+  joystickReaderStepper1.setUp(STEPPER_1_ANALOG);
+  joystickReaderStepper2.setUp(STEPPER_2_ANALOG);
+  joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
 }
 
 // Sends the joystick data as an encoded integer over UDP
@@ -70,8 +72,8 @@ void mainCommunicationLoop()
     return;
   }
   processButtonStep(&buttonIncrementPair4);
-  sendJoystickData(joystickReaderServo1.getUpdatedCurrentAngle(), joystickReaderServo2.getUpdatedCurrentAngle(),
-                   joystickReaderServo3.getUpdatedCurrentAngle(), buttonIncrementPair4.currentAngle);
+  sendJoystickData(joystickReaderStepper1.getUpdatedCurrentAngle(), joystickReaderStepper2.getUpdatedCurrentAngle(),
+                   joystickReaderStepper3.getUpdatedCurrentAngle(), buttonIncrementPair4.currentAngle);
   delay(UPDATE_DELAY_MILLIS);
 }
 
