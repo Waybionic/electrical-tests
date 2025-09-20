@@ -70,8 +70,9 @@ void mainCommunicationLoop()
     return;
   }
   processButtonStep(&buttonIncrementPair4);
-  sendJoystickData(joystickReaderStepper1.getUpdatedCurrentAngle(), joystickReaderStepper2.getUpdatedCurrentAngle(),
-                   joystickReaderStepper3.getUpdatedCurrentAngle(), buttonIncrementPair4.currentAngle);
+  //sendJoystickData(joystickReaderStepper1.getUpdatedCurrentAngle(), joystickReaderStepper2.getUpdatedCurrentAngle(),
+                   //joystickReaderStepper3.getUpdatedCurrentAngle(), buttonIncrementPair4.currentAngle);
+  sendJoystickData(analogRead(STEPPER_1_ANALOG), analogRead(STEPPER_2_ANALOG), analogRead(STEPPER_3_ANALOG), buttonIncrementPair4.currentAngle);
   delay(UPDATE_DELAY_MILLIS);
 }
 
