@@ -21,8 +21,8 @@ unsigned int remotePort = 8888;          // local port to listen for UDP packets
 unsigned int localPort = 2390;           // local port to listen for UDP packets
 
 JoystickReader joystickReaderStepper1(0, 180, false);
-JoystickReader joystickReaderStepper2(45, 90, false);
-JoystickReader joystickReaderStepper3(130, 130, true);
+// JoystickReader joystickReaderStepper2(45, 90, false);
+// JoystickReader joystickReaderStepper3(130, 130, true);
 ButtonIncrementPair buttonIncrementPair4 = {0, (const uint8_t[]){6, 5}, (bool[]){false, false}}; // Button on pin 4, increment on pin 3, increment value 1
 
 WiFiUDP Udp;
@@ -38,8 +38,8 @@ void initializeReaders()
 {
 
   joystickReaderStepper1.setUp(STEPPER_1_ANALOG);
-  joystickReaderStepper2.setUp(STEPPER_2_ANALOG);
-  joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
+  // joystickReaderStepper2.setUp(STEPPER_2_ANALOG);
+  // joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
 }
 
 // Sends the joystick data as an encoded integer over UDP

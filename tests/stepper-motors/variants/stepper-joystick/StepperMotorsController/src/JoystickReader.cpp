@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <JoystickReader.h>
+#define MINIMUM_DETECTABLE_ANGLE 30
 
 JoystickReader::JoystickReader(int startingAngle, int maxAngle, bool flipped)
 {
