@@ -27,12 +27,12 @@ Stepper stepper2(200, stepperPin9, stepperPin10, stepperPin11, stepperPin12);
 // ---- WiFi/UDP ----
 char ssid[] = "CHANGE_ME_SSID";
 char pass[] = "CHANGE_ME_PASSWORD";
-IPAddress stationIP(192, 168, 4, 2);  // static IP for ESP32
+IPAddress stationIP(192, 168, 4, 4);  // static IP for ESP32
 
 WiFiUDP Udp;
-unsigned int localPort = 8888;
+unsigned int localPort = 7777;
 
-#define DELAY_MS 10   // small delay between packets
+#define DELAY_MS 50   // small delay between packets
 
 void setup() {
   Serial.begin(9600);
@@ -63,9 +63,11 @@ void setup() {
 
 // Example: buffer[0] = steps for motor1, buffer[1] = steps for motor2, buffer[2] = steps for motor3
 void moveSteppers(uint8_t output[]) {
-  int steps1 = (int8_t)output[0]; // cast to signed for forward/back
-  int steps2 = (int8_t)output[1];
-  int steps3 = (int8_t)output[2];
+  int center = 512;
+  int deadzone = 30;
+  int steps1 = output[0] * 4; // cast to signed for forward/back
+  int steps2 = output[1] * 4;
+  int steps3 = output[2] * 4;
   Serial.print("1: ");
   Serial.println(steps1);
   /* Serial.print("2: ");
@@ -74,8 +76,14 @@ void moveSteppers(uint8_t output[]) {
   Serial.println(steps2); */
 
 
-  if (steps1 != 0) stepper1.step(steps1);
-  if (steps2 != 0) stepper2.step(steps2);
+
+  if (steps1 > center + deadzone) {
+    stepper1.step(1);
+  }
+  else if (steps1 < center - deadzone) {
+    stepper1.step(-1);
+  }
+  //if (steps2 != 0) stepper2.step(steps2);
   //if (steps3 != 0) stepper3.step(steps3);
 }
 
