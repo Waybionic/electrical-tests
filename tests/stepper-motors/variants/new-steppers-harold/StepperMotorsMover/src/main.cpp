@@ -32,7 +32,7 @@ IPAddress stationIP(192, 168, 4, 4);  // static IP for ESP32
 WiFiUDP Udp;
 unsigned int localPort = 7777;
 
-#define DELAY_MS 50   // small delay between packets
+#define DELAY_MS 10   // small delay between packets
 
 void setup() {
   Serial.begin(9600);
@@ -61,30 +61,37 @@ void setup() {
   //stepper3.setSpeed(speed);
 }
 
-// Example: buffer[0] = steps for motor1, buffer[1] = steps for motor2, buffer[2] = steps for motor3
 void moveSteppers(uint8_t output[]) {
   int center = 512;
   int deadzone = 30;
-  int steps1 = output[0] * 4; // cast to signed for forward/back
+  int steps1 = output[0] * 4;
   int steps2 = output[1] * 4;
   int steps3 = output[2] * 4;
-  Serial.print("1: ");
-  Serial.println(steps1);
-  /* Serial.print("2: ");
-  Serial.println(steps2);
-  Serial.print("3: ");
-  Serial.println(steps2); */
-
-
 
   if (steps1 > center + deadzone) {
-    stepper1.step(1);
+    int distance = steps1 - center - deadzone;
+    int num_steps = 1;
+    if (distance > 200) num_steps = 2;
+    if (distance > 300) num_steps = 6;
+    if (distance > 400) num_steps = 10;
+    
+    for (int i = 0; i < num_steps; i++) {
+      stepper1.step(1);
+      if (i < num_steps - 1) delay(2);
+    }
   }
   else if (steps1 < center - deadzone) {
-    stepper1.step(-1);
+    int distance = center - deadzone - steps1;
+    int num_steps = 1;
+    if (distance > 200) num_steps = 2;
+    if (distance > 300) num_steps = 6;
+    if (distance > 400) num_steps = 10;
+  
+    for (int i = 0; i < num_steps; i++) {
+      stepper1.step(-1);
+      if (i < num_steps - 1) delay(2);
+    }
   }
-  //if (steps2 != 0) stepper2.step(steps2);
-  //if (steps3 != 0) stepper3.step(steps3);
 }
 
 void loop() {
