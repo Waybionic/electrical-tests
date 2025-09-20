@@ -15,10 +15,10 @@ char pass[] = "CHANGE_ME_PASSWORD"; // your network password (use for WPA, or us
 
 int status = WL_IDLE_STATUS;
 
-IPAddress stationIP(192, 168, 4, 2);     // Local IP address for the access point
-IPAddress accessPointIP(192, 168, 4, 1); // IP address of the access point
-unsigned int remotePort = 8888;          // local port to listen for UDP packets
-unsigned int localPort = 2390;           // local port to listen for UDP packets
+IPAddress stationIP(192, 168, 4, 4);     // Local IP address for the access point
+IPAddress accessPointIP(192, 168, 4, 3); // IP address of the access point
+unsigned int remotePort = 7777;          // local port to listen for UDP packets
+unsigned int localPort = 2490;           // local port to listen for UDP packets
 
 JoystickReader joystickReaderStepper1(0, 180, false);
 JoystickReader joystickReaderStepper2(45, 90, false);
@@ -72,7 +72,7 @@ void mainCommunicationLoop()
   processButtonStep(&buttonIncrementPair4);
   //sendJoystickData(joystickReaderStepper1.getUpdatedCurrentAngle(), joystickReaderStepper2.getUpdatedCurrentAngle(),
                    //joystickReaderStepper3.getUpdatedCurrentAngle(), buttonIncrementPair4.currentAngle);
-  sendJoystickData(analogRead(STEPPER_1_ANALOG), analogRead(STEPPER_2_ANALOG), analogRead(STEPPER_3_ANALOG), buttonIncrementPair4.currentAngle);
+  sendJoystickData(analogRead(STEPPER_1_ANALOG) / 4, analogRead(STEPPER_2_ANALOG) / 4, analogRead(STEPPER_3_ANALOG) / 4, buttonIncrementPair4.currentAngle);
   delay(UPDATE_DELAY_MILLIS);
 }
 
