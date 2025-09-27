@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <WiFiUdp.h>
 #include <Stepper.h>
 
 // ---- Stepper pins ----
@@ -27,9 +26,11 @@ Stepper stepper2(200, stepperPin9, stepperPin10, stepperPin11, stepperPin12);
 // ---- WiFi/UDP ----
 char ssid[] = "CHANGE_ME_SSID";
 char pass[] = "CHANGE_ME_PASSWORD";
+
+//last digit may be 3
 IPAddress stationIP(192, 168, 4, 4);  // static IP for ESP32
 
-WiFiUDP Udp;
+WiFiClient client;
 unsigned int localPort = 7777;
 
 #define DELAY_MS 10   // small delay between packets
@@ -50,10 +51,12 @@ void setup() {
   Serial.println(" connected!");
   Serial.println(WiFi.localIP());
 
-  // Start UDP listener
-  Udp.begin(localPort);
-  Serial.print("Listening on UDP port ");
-  Serial.println(localPort);
+  if (client.connect(serverIP, 7777)) {
+    Serial.println("Connected to TCP server.");
+  }
+  else {
+    Serial.println("Failed to connect to TCP server.");
+  }
 
   // Init stepper speeds
   stepper1.setSpeed(speed);
@@ -95,14 +98,16 @@ void moveSteppers(uint8_t output[]) {
 }
 
 void loop() {
-  int packetSize = Udp.parsePacket();
-  if (packetSize >= 3) {
-    uint8_t buff[3];
-    Udp.read(buff, 3);
+  if (client.connected() && client.available() >= 4) {
+    uint8_t buff[4];
+    client.readBytes(buff, 4);
     moveSteppers(buff);
-  } else if (packetSize > 0) {
-    // discard incomplete packets
-    while (Udp.available()) Udp.read();
+  }
+
+  if (!client.connected()) {
+    if (client.connect(serverIP, 7777)) {
+      Serial.println("Reconnected to TCP server.");
+    }
   }
 
   delay(DELAY_MS);

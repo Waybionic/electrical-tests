@@ -25,7 +25,8 @@ JoystickReader joystickReaderStepper2(45, 90, false);
 JoystickReader joystickReaderStepper3(130, 130, true);
 ButtonIncrementPair buttonIncrementPair4 = {0, (const uint8_t[]){6, 5}, (bool[]){false, false}}; // Button on pin 4, increment on pin 3, increment value 1
 
-WiFiUDP Udp;
+WiFiServer server(remotePort);
+
 
 // Checks if the device is connected to the WiFi network
 bool isConnected()
@@ -45,7 +46,7 @@ void initializeReaders()
 // Sends the joystick data as an encoded integer over UDP
 // The encoding combines the x and y coordinates into a single integer
 // The x coordinate is shifted left by 16 bits and combined with the y coordinate
-void sendJoystickData(int servo1, int servo2, int servo3, int servo4)
+void sendJoystickData(int stepper1, int stepper2, int stepper3, int stepper4)
 {
   // Serial.print("Sending joystick data: ");
   // Serial.print(servo1);
@@ -56,10 +57,12 @@ void sendJoystickData(int servo1, int servo2, int servo3, int servo4)
   // Serial.print(servo3);
   // Serial.print(", ");
   // Serial.println(servo4);
-  uint8_t payload[4] = {servo1, servo2, servo3, servo4};
-  Udp.beginPacket(stationIP, remotePort);
-  Udp.write(payload, 4);
-  Udp.endPacket();
+  WiFiClient client = server.available();
+  if (client) {
+    uint8_t payload[4] = {stepper1, stepper2, stepper3, stepper4};
+    client.write(payload, 4);
+  }
+  
 }
 
 // The main communication loop for sending joystick data over UDP
@@ -168,11 +171,9 @@ void setup()
 
   printWiFiStatus();
 
-  Serial.println("Starting UDP server...");
-  // start listening for UDP packets on the specified port
-  Udp.begin(localPort);
+  server.begin();
 
-  Serial.println("UDP server started on port " + String(localPort));
+  Serial.println("TCP server started on port 7777.");
 }
 
 void loop()
