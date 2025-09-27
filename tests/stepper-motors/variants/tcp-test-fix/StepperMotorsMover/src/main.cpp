@@ -27,8 +27,8 @@ Stepper stepper2(200, stepperPin9, stepperPin10, stepperPin11, stepperPin12);
 char ssid[] = "CHANGE_ME_SSID";
 char pass[] = "CHANGE_ME_PASSWORD";
 
-//last digit may be 3
-IPAddress stationIP(192, 168, 4, 4);  // static IP for ESP32
+//last digit may be 3 or 4
+IPAddress stationIP(192, 168, 4, 3);  // static IP for ESP32
 
 WiFiClient client;
 unsigned int localPort = 7777;
@@ -51,7 +51,7 @@ void setup() {
   Serial.println(" connected!");
   Serial.println(WiFi.localIP());
 
-  if (client.connect(serverIP, 7777)) {
+  if (client.connect(stationIP, 7777)) {
     Serial.println("Connected to TCP server.");
   }
   else {
@@ -105,7 +105,7 @@ void loop() {
   }
 
   if (!client.connected()) {
-    if (client.connect(serverIP, 7777)) {
+    if (client.connect(stationIP, 7777)) {
       Serial.println("Reconnected to TCP server.");
     }
   }
