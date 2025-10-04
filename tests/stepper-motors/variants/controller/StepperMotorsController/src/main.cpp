@@ -36,7 +36,6 @@ bool isConnected()
 // Initialize all controller readers
 void initializeReaders()
 {
-
   joystickReaderStepper1.setUp(STEPPER_1_ANALOG);
   joystickReaderStepper2.setUp(STEPPER_2_ANALOG);
   joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
@@ -47,15 +46,6 @@ void initializeReaders()
 // The x coordinate is shifted left by 16 bits and combined with the y coordinate
 void sendJoystickData(int servo1, int servo2, int servo3, int servo4)
 {
-  // Serial.print("Sending joystick data: ");
-  // Serial.print(servo1);
-  // Serial.println();
-  // Serial.print(", ");
-  // Serial.print(servo2);
-  // Serial.print(", ");
-  // Serial.print(servo3);
-  // Serial.print(", ");
-  // Serial.println(servo4);
   uint8_t payload[4] = {servo1, servo2, servo3, servo4};
   Udp.beginPacket(stationIP, remotePort);
   Udp.write(payload, 4);
@@ -70,8 +60,6 @@ void mainCommunicationLoop()
     return;
   }
   processButtonStep(&buttonIncrementPair4);
-  //sendJoystickData(joystickReaderStepper1.getUpdatedCurrentAngle(), joystickReaderStepper2.getUpdatedCurrentAngle(),
-                   //joystickReaderStepper3.getUpdatedCurrentAngle(), buttonIncrementPair4.currentAngle);
   sendJoystickData(analogRead(STEPPER_1_ANALOG) / 4, analogRead(STEPPER_2_ANALOG) / 4, analogRead(STEPPER_3_ANALOG) / 4, buttonIncrementPair4.currentAngle);
   delay(UPDATE_DELAY_MILLIS);
 }
@@ -79,48 +67,32 @@ void mainCommunicationLoop()
 // Prints the WiFi status to the serial monitor
 void printWiFiStatus()
 {
-
   // print the SSID of the network you're attached to:
-
   Serial.print("SSID: ");
-
   Serial.println(WiFi.SSID());
 
   // print your WiFi shield's IP address:
-
   IPAddress ip = WiFi.localIP();
-
   Serial.print("IP Address: ");
-
   Serial.println(ip);
 }
 
 void setup()
 {
-
   // Initialize serial and wait for port to open:
-
   Serial.begin(9600);
-
   while (!Serial)
   {
-
     ; // wait for serial port to connect. Needed for native USB port only
   }
-
   initializeReaders();
-
   Serial.println("Access Point Web Server");
 
   // check for the WiFi module:
-
   if (WiFi.status() == WL_NO_MODULE)
   {
-
     Serial.println("Communication with WiFi module failed!");
-
     // don't continue
-
     while (true)
       ;
   }
@@ -129,76 +101,53 @@ void setup()
 
   if (fv < WIFI_FIRMWARE_LATEST_VERSION)
   {
-
     Serial.println("Please upgrade the firmware");
   }
 
   // by default the local IP address will be 192.168.4.1
-
   WiFi.config(accessPointIP);
 
   // print the network name (SSID);
-
   Serial.print("Creating access point named: ");
-
   Serial.println(ssid);
 
   // Create open network. Change this line if you want to create an WEP network:
-
   status = WiFi.beginAP(ssid, pass);
-
   if (status != WL_AP_LISTENING)
   {
-
     Serial.println("Creating access point failed");
-
     // don't continue
-
     while (true)
       ;
   }
 
   // wait 10 seconds for connection:
-
   delay(10000);
 
   // start the web server on port 80
-
   // you're connected now, so print out the status
-
   printWiFiStatus();
-
   Serial.println("Starting UDP server...");
   // start listening for UDP packets on the specified port
   Udp.begin(localPort);
-
   Serial.println("UDP server started on port " + String(localPort));
 }
 
 void loop()
 {
-
   // compare the previous status to the current status
-
   if (status != WiFi.status())
   {
-
     // it has changed update the variable
-
     status = WiFi.status();
-
     if (status == WL_AP_CONNECTED)
     {
-
       // a device has connected to the AP
-
       Serial.println("Device connected to AP");
     }
     else
     {
-
       // a device has disconnected from the AP, and we are back in listening mode
-
       Serial.println("Device disconnected from AP");
     }
   }
