@@ -7,20 +7,20 @@ const int stepperPin2 = 3;
 const int stepperPin3 = 4;
 const int stepperPin4 = 5;
 
-/* const int stepperPin5 = 6;
+const int stepperPin5 = 6;
 const int stepperPin6 = 7;
 const int stepperPin7 = 8;
-const int stepperPin8 = 9; */
+const int stepperPin8 = 9;
 
-const int stepperPin9 = 10;
+/* const int stepperPin9 = 10;
 const int stepperPin10 = 11;
 const int stepperPin11 = 12;
-const int stepperPin12 = 13;
+const int stepperPin12 = 13; */
 
 // ---- Steppers ----
 int speed = 30; // RPM
 Stepper stepper1(200, stepperPin1, stepperPin2, stepperPin3, stepperPin4);
-Stepper stepper2(200, stepperPin9, stepperPin10, stepperPin11, stepperPin12);
+Stepper stepper2(200, stepperPin5, stepperPin6, stepperPin7, stepperPin8);
 //Stepper stepper3(200, stepperPin9, stepperPin10, stepperPin11, stepperPin12);
 
 // ---- WiFi/UDP ----
