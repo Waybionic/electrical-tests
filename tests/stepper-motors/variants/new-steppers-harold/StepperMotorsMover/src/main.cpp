@@ -51,12 +51,16 @@ void setup() {
   Serial.println(" connected!");
   Serial.println(WiFi.localIP());
 
-  if (client.connect(stationIP, 7777)) {
-    Serial.println("Connected to TCP server.");
+  // Start UDP listener
+  /* server.begin();
+  Serial.print("Listening on UDP port ");
+  Serial.println(localPort); */
+
+  while (!client.connect(stationIP, 7777)) {
+    //Trying to connect to TCP server
+    delay(1000); 
   }
-  else {
-    Serial.println("Failed to connect to TCP server.");
-  }
+  //Connected to TCP server
 
   // Init stepper speeds
   stepper1.setSpeed(speed);
@@ -95,20 +99,58 @@ void moveSteppers(uint8_t output[]) {
       if (i < num_steps - 1) delay(2);
     }
   }
+
+  if (steps2 > center + deadzone) {
+    int distance = steps2 - center - deadzone;
+    int num_steps = 1;
+    if (distance > 200) num_steps = 2;
+    if (distance > 300) num_steps = 6;
+    if (distance > 400) num_steps = 10;
+    
+    for (int i = 0; i < num_steps; i++) {
+      stepper2.step(1);
+      if (i < num_steps - 1) delay(2);
+    }
+  }
+  else if (steps2 < center - deadzone) {
+    int distance = center - deadzone - steps2;
+    int num_steps = 1;
+    if (distance > 200) num_steps = 2;
+    if (distance > 300) num_steps = 6;
+    if (distance > 400) num_steps = 10;
+  
+    for (int i = 0; i < num_steps; i++) {
+      stepper2.step(-1);
+      if (i < num_steps - 1) delay(2);
+    }
+  }
 }
 
 void loop() {
-  if (client.connected() && client.available() >= 4) {
+  /* WiFiClient client = server.available();
+  if (client) {
+    if (client.connected()) {
+      uint8_t buff[3];
+      uint8_t index = 0;
+
+      while (client.available()) {
+        buff[index++] = client.read();
+        if (index == 3) {
+          moveSteppers(buff);
+          index = 0;
+        }
+      }
+    }
+    else {
+      client.stop();
+    }
+  } */
+
+  if (client.available() && client.connected()) {
+    Serial.println("Client is connected.");
     uint8_t buff[4];
     client.readBytes(buff, 4);
     moveSteppers(buff);
   }
-
-  if (!client.connected()) {
-    if (client.connect(stationIP, 7777)) {
-      Serial.println("Reconnected to TCP server.");
-    }
-  }
-
   delay(DELAY_MS);
 }
