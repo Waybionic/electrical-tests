@@ -4,6 +4,7 @@
 #define STEPPER_2_ANALOG A2
 #define STEPPER_3_ANALOG A1
 
+
 #include "Arduino.h"
 #include "JoystickReader.h"
 #include "ButtonIncrementPair.h"
@@ -15,8 +16,8 @@ char pass[] = "CHANGE_ME_PASSWORD"; // your network password (use for WPA, or us
 
 int status = WL_IDLE_STATUS;
 
-IPAddress stationIP(192, 168, 4, 4);     // Local IP address for the access point
-IPAddress accessPointIP(192, 168, 4, 3); // IP address of the access point
+IPAddress stationIP(192, 168, 4, 2);     // Local IP address for the access point
+IPAddress accessPointIP(192, 168, 4, 1); // IP address of the access point
 unsigned int remotePort = 7777;          // local port to listen for UDP packets
 unsigned int localPort = 2490;           // local port to listen for UDP packets
 
@@ -54,11 +55,14 @@ void sendJoystickData(int stepper1, int stepper2, int stepper3, int stepper4)
     client.write(payload, 4);
   } */
  WiFiClient client = server.available();
- if (client && client.connected()) {
-  Serial.println("Client is connected.");
-  uint8_t payload[4] = {stepper1, stepper2, stepper3, stepper4};
-  client.write(payload, 4);
+ if (client) {
+  if (client.connected()) {
+    Serial.println("Client is connected.");
+    uint8_t payload[4] = {stepper1, stepper2, stepper3, stepper4};
+    client.write(payload, 4);
+  }
  }
+ 
 }
 
 // The main communication loop for sending joystick data over UDP
@@ -68,7 +72,7 @@ void mainCommunicationLoop()
   {
     return;
   }
-  processButtonStep(&buttonIncrementPair4);
+  //processButtonStep(&buttonIncrementPair4);
   sendJoystickData(analogRead(STEPPER_1_ANALOG) / 4, analogRead(STEPPER_2_ANALOG) / 4, analogRead(STEPPER_3_ANALOG) / 4, buttonIncrementPair4.currentAngle);
   delay(UPDATE_DELAY_MILLIS);
 }
@@ -127,8 +131,7 @@ void setup()
   {
     Serial.println("Creating access point failed");
     // don't continue
-    while (true)
-      ;
+    while (true);
   }
 
   // wait 10 seconds for connection:
@@ -138,9 +141,8 @@ void setup()
   // you're connected now, so print out the status
   printWiFiStatus();
 
-  /* server.begin();
-
-  Serial.println("TCP server started on port 7777."); */
+  server.begin();
+  Serial.println("TCP server started on port 7777.");
 }
 
 void loop()
