@@ -28,7 +28,10 @@ char ssid[] = "CHANGE_ME_SSID";
 char pass[] = "CHANGE_ME_PASSWORD";
 
 //last digit may be 3 or 4
-IPAddress stationIP(192, 168, 4, 3);  // static IP for ESP32
+IPAddress stationIP(192, 168, 4, 1);  // static IP for ESP32
+IPAddress localIP(192, 168, 4, 2);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 255, 0);
 
 WiFiClient client;
 unsigned int localPort = 7777;
@@ -41,7 +44,7 @@ void setup() {
     continue;
 
   // Connect to WiFi
-  WiFi.config(stationIP);
+  WiFi.config(localIP, gateway, subnet);
   WiFi.begin(ssid, pass);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -49,6 +52,7 @@ void setup() {
     Serial.print(".");
   }
   Serial.println(" connected!");
+  Serial.print("Local IP: ");
   Serial.println(WiFi.localIP());
 
   // Start UDP listener
@@ -58,8 +62,10 @@ void setup() {
 
   while (!client.connect(stationIP, 7777)) {
     //Trying to connect to TCP server
+    Serial.println("Connecting to controller...");
     delay(1000); 
   }
+  Serial.println("Connected to controller");
   //Connected to TCP server
 
   // Init stepper speeds
@@ -146,11 +152,17 @@ void loop() {
     }
   } */
 
-  if (client.available() && client.connected()) {
+  if (client.connected() && client.available() >= 4) {
     Serial.println("Client is connected.");
     uint8_t buff[4];
     client.readBytes(buff, 4);
     moveSteppers(buff);
+  }
+  else if (!client.connected()) {
+    Serial.println("Disconnected, trying to reconnect...");
+    while (!client.connect(stationIP, 7777)) {
+      delay(1000);
+    }
   }
   delay(DELAY_MS);
 }
