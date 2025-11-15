@@ -1,91 +1,56 @@
+#include <AccelStepper.h>
+#include <Arduino.h>
 
-#include <WiFi.h>
-#include <WiFiUdp.h>
-#include <Stepper.h>
+/*
+Moves one Stepper Motor with limits
+  - can only move 90 degrees in both directions
+*/
 
-// ---- Stepper pins ----
-const int stepperXPin1 = 6;
-const int stepperXPin2 = 7;
-const int stepperXPin3 = 8;
-const int stepperXPin4 = 9;
 
-const int stepperYPin5 = 2;
-const int stepperYPin6 = 3;
-const int stepperYPin7 = 4;
-const int stepperYPin8 = 5;
+const int EN_PIN = 8;
+const int STEP_PIN = 9;
+const int DIR_PIN = 10;
 
-// ---- Stepper objects ----
-int speed = 30; // RPM
-Stepper stepperX(200, stepperXPin1, stepperXPin2, stepperXPin3, stepperXPin4);
-Stepper stepperY(200, stepperYPin5, stepperYPin6, stepperYPin7, stepperYPin8);
+AccelStepper accelStepperX(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
-// ---- Joysticks ----
-const int JOYSTICK_PIN_X = A0;  // joystick for stepper X
-const int JOYSTICK_PIN_Y = A1;  // joystick for stepper Y
+const int JOYSTICK_X = A1;
 
-int CENTER_X = 498;  // will calibrate at startup
-int CENTER_Y = 505;  
-const int DEADZONE = 80;
+const int DEADZONE = 100; 
+const int SPEEDX = 1000;
+int center = 512;   
 
-// ---- WiFi/UDP (optional, unused here) ----
-char ssid[] = "CHANGE_ME_SSID";
-char pass[] = "CHANGE_ME_PASSWORD";
-IPAddress stationIP(192, 168, 4, 4);
-WiFiUDP Udp;
-unsigned int localPort = 7777;
-
-// ---- Helper: smooth joystick readings ----
-int readJoystick(int pin) {
-  long sum = 0;
-  for (int i = 0; i < 10; i++) {
-    sum += analogRead(pin);
-    delay(2);
-  }
-  return sum / 10;
-}
 
 void setup() {
   Serial.begin(9600);
-  while (!Serial) continue;
+  pinMode(EN_PIN, OUTPUT);
+  digitalWrite(EN_PIN, LOW);
 
-  // Init stepper speed
-  stepperX.setSpeed(speed);
-  stepperY.setSpeed(speed);
-
-  // Calibrate joystick centers
-  CENTER_X = readJoystick(JOYSTICK_PIN_X);
-  CENTER_Y = readJoystick(JOYSTICK_PIN_Y);
-
-  Serial.print("Calibrated CENTER_X = ");
-  Serial.println(CENTER_X);
-  Serial.print("Calibrated CENTER_Y = ");
-  Serial.println(CENTER_Y);
+  accelStepperX.setMaxSpeed(1500);
+  accelStepperX.setAcceleration(800);
+  accelStepperX.setCurrentPosition(0); //for now unless we want a diff starting pos
 }
 
 void loop() {
-  // ---- Joystick control ----
-  int joystickX = readJoystick(JOYSTICK_PIN_X);
-  int joystickY = readJoystick(JOYSTICK_PIN_Y);
+  int joystickX = analogRead(JOYSTICK_X);
 
-  // Debug joystick values
-  Serial.print("JoystickX: ");
-  Serial.print(joystickX);
-  Serial.print(" | JoystickY: ");
-  Serial.println(joystickY);
-
-  // Apply deadzone for X
-  if (joystickX < CENTER_X - DEADZONE) {
-    stepperX.step(-1);
-  } else if (joystickX > CENTER_X + DEADZONE) {
-    stepperX.step(1);
+  if (joystickX < center - DEADZONE) {
+    accelStepperX.setSpeed(SPEEDX);
+  }
+  else if (joystickX > center + DEADZONE) {
+    accelStepperX.setSpeed(-SPEEDX);
+  } else {
+    accelStepperX.setSpeed(0);
   }
 
-  // Apply deadzone for Y
-  if (joystickY < CENTER_Y - DEADZONE) {
-    stepperY.step(-1);
-  } else if (joystickY > CENTER_Y + DEADZONE) {
-    stepperY.step(1);
-  }
+  long pos = accelStepperX.currentPosition();
+  Serial.println(pos);
 
-  delay(5); // smooth stepping
+  //360 steps is 90 degrees
+  if (pos >= 360 & accelStepperX.speed() > 0) {
+      accelStepperX.setSpeed(0);
+  }
+  else if (pos <= -360 && accelStepperX.speed() < 0) {
+      accelStepperX.setSpeed(0);
+  }
+  accelStepperX.runSpeed();
 }
