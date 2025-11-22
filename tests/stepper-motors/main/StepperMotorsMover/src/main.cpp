@@ -3,9 +3,11 @@
 
 /*
 Moves one Stepper Motor with limits
-  - can only move 90 degrees in both directions
+  - currently can only move 90 degrees (DEG_90 limit) in both directions
 */
 
+const int DEG_90 = 360;
+const int DEG_180 = 720;
 
 const int EN_PIN = 8;
 const int STEP_PIN = 9;
@@ -45,11 +47,10 @@ void loop() {
   long pos = accelStepperX.currentPosition();
   Serial.println(pos);
 
-  //360 steps is 90 degrees
-  if (pos >= 360 & accelStepperX.speed() > 0) {
+  if (pos >= DEG_90 & accelStepperX.speed() > 0) {
       accelStepperX.setSpeed(0);
   }
-  else if (pos <= -360 && accelStepperX.speed() < 0) {
+  else if (pos <= -DEG_90 && accelStepperX.speed() < 0) {
       accelStepperX.setSpeed(0);
   }
   accelStepperX.runSpeed();
