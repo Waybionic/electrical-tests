@@ -1,15 +1,17 @@
-// This code is for the sender of rotation coordinates to the arduino
-
-#define STEPPER_1_ANALOG A3
-#define STEPPER_2_ANALOG A2
-#define STEPPER_3_ANALOG A1
-
-
+//these headers?
 #include "Arduino.h"
 #include "JoystickReader.h"
 #include "ButtonIncrementPair.h"
 #include "Encoding.h"
 #include "WiFiS3.h"
+#include <AccelStepper.h>
+
+//CHANGE ACCORDING TO DESIRED BEHAVIOUR
+//CURRENT BEHAVIOUR: OPERATE 2 STEPPERS WITH 1 JOYSTICK (X & Y directions)
+const int JOYSTICK_1X = A5;
+const int JOYSTICK_1Y = A4;
+const int JOYSTICK_2X = A3;
+const int JOYSTICK_2Y = A2;
 
 char ssid[] = "CHANGE_ME_SSID";      // your network SSID (name)
 char pass[] = "CHANGE_ME_PASSWORD"; // your network password (use for WPA, or use as key for WEP)
@@ -30,56 +32,41 @@ ButtonIncrementPair buttonIncrementPair4 = {0, (const uint8_t[]){6, 5}, (bool[])
 WiFiServer server(remotePort);
 
 // Checks if the device is connected to the WiFi network
-bool isConnected()
-{
+bool isConnected() {
   return WiFi.status() == WL_AP_CONNECTED;
 }
 
 // Initialize all controller readers
-void initializeReaders()
-{
-
-  joystickReaderStepper1.setUp(STEPPER_1_ANALOG);
-  joystickReaderStepper2.setUp(STEPPER_2_ANALOG);
-  joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
+void initializeReaders() {
+  joystickReaderStepper1.setUp(JOYSTICK_1X);
+  joystickReaderStepper2.setUp(JOYSTICK_1Y);
+  //joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
 }
 
 // Sends the joystick data as an encoded integer over UDP
 // The encoding combines the x and y coordinates into a single integer
 // The x coordinate is shifted left by 16 bits and combined with the y coordinate
-void sendJoystickData(int stepper1, int stepper2, int stepper3, int stepper4)
-{
-  /* uint8_t payload[4] = {stepper1, stepper2, stepper3, stepper4};
-
-  if (client.connect(stationIP, remotePort)) {
-    client.write(payload, 4);
-  } */
- WiFiClient client = server.available();
- if (client) {
-  if (client.connected()) {
+void sendJoystickData(int stepper1, int stepper2, int stepper3, int stepper4) {
+  WiFiClient client = server.available();
+  if (client && client.connected()) {
     Serial.println("Client is connected.");
     uint8_t payload[4] = {stepper1, stepper2, stepper3, stepper4};
     client.write(payload, 4);
   }
- }
- 
 }
 
 // The main communication loop for sending joystick data over UDP
-void mainCommunicationLoop()
-{
-  if (!isConnected())
-  {
+void mainCommunicationLoop() {
+  if (!isConnected()) {
     return;
   }
   //processButtonStep(&buttonIncrementPair4);
-  sendJoystickData(analogRead(STEPPER_1_ANALOG) / 4, analogRead(STEPPER_2_ANALOG) / 4, analogRead(STEPPER_3_ANALOG) / 4, buttonIncrementPair4.currentAngle);
+  sendJoystickData(analogRead(JOYSTICK_1X) / 4, analogRead(JOYSTICK_1Y) / 4, analogRead(JOYSTICK_2X) / 4, analogRead(JOYSTICK_2Y) / 4);
   delay(UPDATE_DELAY_MILLIS);
 }
 
 // Prints the WiFi status to the serial monitor
-void printWiFiStatus()
-{
+void printWiFiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
@@ -90,8 +77,7 @@ void printWiFiStatus()
   Serial.println(ip);
 }
 
-void setup()
-{
+void setup() {
   // Initialize serial and wait for port to open:
   Serial.begin(9600);
   while (!Serial)
@@ -102,8 +88,7 @@ void setup()
   Serial.println("Access Point Web Server");
 
   // check for the WiFi module:
-  if (WiFi.status() == WL_NO_MODULE)
-  {
+  if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed!");
     // don't continue
     while (true)
@@ -112,8 +97,7 @@ void setup()
 
   String fv = WiFi.firmwareVersion();
 
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION)
-  {
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
     Serial.println("Please upgrade the firmware");
   }
 
@@ -127,8 +111,7 @@ void setup()
   // Create open network. Change this line if you want to create an WEP network:
   status = WiFi.beginAP(ssid, pass);
 
-  if (status != WL_AP_LISTENING)
-  {
+  if (status != WL_AP_LISTENING) {
     Serial.println("Creating access point failed");
     // don't continue
     while (true);
@@ -145,21 +128,17 @@ void setup()
   Serial.println("TCP server started on port 7777.");
 }
 
-void loop()
-{
+void loop() {
   // compare the previous status to the current status
 
-  if (status != WiFi.status())
-  {
+  if (status != WiFi.status()) {
     // it has changed update the variable
     status = WiFi.status();
 
-    if (status == WL_AP_CONNECTED)
-    {
+    if (status == WL_AP_CONNECTED) {
       Serial.println("Device connected to AP");      // a device has connected to the AP
     }
-    else
-    {
+    else {
       // a device has disconnected from the AP, and we are back in listening mode
       Serial.println("Device disconnected from AP");
     }
