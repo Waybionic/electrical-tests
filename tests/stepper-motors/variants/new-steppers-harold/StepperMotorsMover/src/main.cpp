@@ -2,9 +2,6 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 
-const int DEG_90 = 360;
-const int DEG_180 = 720;
-
 const int EN_PIN_1 = 4;
 const int STEP_PIN_1 = 5;
 const int DIR_PIN_1 = 6;
@@ -36,38 +33,29 @@ void setup() {
   accelStepperY.setMaxSpeed(1500);
   accelStepperY.setAcceleration(800);
   accelStepperY.setCurrentPosition(0); //for now unless we want a diff starting pos
-  
-  accelStepperX.moveTo(300);
 }
 
 void loop() {
   int joystickX = analogRead(JOYSTICK_X);
   int joystickY = analogRead(JOYSTICK_Y);
+  int degree = 270; //CHANGE THIS VALUE TO CHANGE POSITION LIMITS
+  int limit = degree * 4;
 
-  if (joystickX < CENTER - DEADZONE) {
-    accelStepperX.run();
-  }
-
-  /* 
-  //Method 1 using setSpeed
   if (joystickX < CENTER - DEADZONE) {
     accelStepperX.setSpeed(SPEEDX);
   }
   else if (joystickX > CENTER + DEADZONE) {
     accelStepperX.setSpeed(-SPEEDX);
-  } else {
+  }
+  else {
     accelStepperX.setSpeed(0);
   }
 
   long pos = accelStepperX.currentPosition();
   Serial.println(pos);
 
-  if (pos >= DEG_90 & accelStepperX.speed() > 0) {
-      accelStepperX.setSpeed(0);
-  }
-  else if (pos <= -DEG_90 && accelStepperX.speed() < 0) {
+  if ((pos >= limit && accelStepperX.speed() > 0) || (pos <= -limit && accelStepperX.speed() < 0)) {
       accelStepperX.setSpeed(0);
   }
   accelStepperX.runSpeed();
- */
 }
