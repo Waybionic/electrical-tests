@@ -13,25 +13,39 @@ void JoystickReader::setUp(uint8_t joyStickAnalogPin)
     this->joyStickAnalogPin = joyStickAnalogPin;
     this->baseValue = analogRead(joyStickAnalogPin);
     this->lastJoystickValue = baseValue; // Initialize lastJoystickValue to the base value
+    this->lastUpdateMillis = millis();
 }
 
-int JoystickReader::getUpdatedCurrentAngle()
+uint8_t JoystickReader::setUpdatedCurrentAngle(double increment)
 {
-    double increment = getIncrementFromJoystick();
     double newAngle = currentAngle + increment;
-    currentAngle = constrain(newAngle, 0, maxAngle);
-    return floor(currentAngle);
+    currentAngle = constrain(newAngle, 0.0, (double)maxAngle);
+
+    return (uint8_t)round(currentAngle);
 }
 
-double JoystickReader::getIncrementFromJoystick()
+double JoystickReader::getIncrementFromJoystick(unsigned long milliseconds)
 {
-    int joystickValue = analogRead(joyStickAnalogPin);
-    if (abs(joystickValue - baseValue) < MINIMUM_DETECTABLE_ANGLE)
+    const int joystickValue = analogRead(joyStickAnalogPin);
+    const int rawDelta = joystickValue - baseValue;
+    const unsigned long deltaMillis = (milliseconds - lastUpdateMillis);
+    lastUpdateMillis = milliseconds;
+
+    // Dead zone in ADC counts
+    if (abs(rawDelta) < MINIMUM_DETECTABLE_ANGLE)
     {
-        return 0; // Ignore small changes
+        return 0.0;
     }
-    double increment = (joystickValue - baseValue) * signMul; // Apply the sign multiplier
-    double div = 1000;
-    double seconds = (UPDATE_DELAY_MILLIS / div);
-    return (double)map(increment, -JOYSTICK_MAX, JOYSTICK_MAX, -MAX_INCREMENT, MAX_INCREMENT) * seconds;
+
+    const double deltaSeconds = (deltaMillis) / 1000.0;
+    int clamped = constrain(rawDelta, -JOYSTICK_MAX, JOYSTICK_MAX);
+
+    // Apply direction flip if needed
+    clamped *= signMul;
+
+    const double scaledClamp = (double)clamped / (double)JOYSTICK_MAX; // Scale to -1.0 to 1.0
+    const double rate = scaledClamp * MAX_INCREMENT_PER_S;
+
+    // Convert rate to angle increment given elapsed time
+    return rate * deltaSeconds;
 }
