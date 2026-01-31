@@ -13,7 +13,7 @@ const int UPDATE_DELAY_MILLIS = 1; // Delay for joystick updates
 
 #include "Arduino.h"
 #include "JoystickPair.h"
-#include "Encoding.h"how ca
+#include "Encoding.h"
 #include "WiFiS3.h"
 
 char ssid[] = "CHANGE_ME_SSID";      // your network SSID (name)

@@ -34,12 +34,12 @@ const int ACCELERATION_X = 1000;
 const int ACCELERATION_Y = 1000;
 const int MAX_SPEED_X = 800;
 const int MAX_SPEED_Y = 800;
-const float MIN_ANGLE_X = -45.0; //change depending on desired angle limits
-const float MAX_ANGLE_X = 45.0; //ditto
-const float MIN_ANGLE_Y = 0; //can test with negative values
+const float MIN_ANGLE_X = -135.0; //change depending on desired angle limits
+const float MAX_ANGLE_X = 135.0; //ditto
+const float MIN_ANGLE_Y = -135.0; //can test with negative values
 const float MAX_ANGLE_Y = 135.0;
 
-const float MOVEMENT_SCALE = 10; //>1 = faster, <1 = slower
+const float MOVEMENT_SCALE = 3; //>1 = faster, <1 = slower
 
 const int STEPS_PER_REV = 200;   // 200 for 1.8° motors, 400 for 0.9°
 const int MICROSTEPS = 4;        // Use microstepping! 1, 2, 4, 8, 16, 32 (set on driver)
@@ -108,7 +108,7 @@ void setup() {
       Serial.print("\n");
 
       // wait 10 seconds for connection:
-      delay(10000);
+      delay(5000);
   }
   Serial.println("Connected to WiFi");
 
@@ -139,14 +139,12 @@ void moveSteppers(uint8_t output[]) {
   int joystickX = output[0];
   int joystickY = output[1];
   
-  Serial.print("JoystickX: ");
+  /* Serial.print("JoystickX: ");
   Serial.println(joystickX);
   Serial.print("JoystickY: ");
-  Serial.println(joystickY);
+  Serial.println(joystickY); */
 
-
-
-
+  //new code for moving steppers passing position angles to mover (like we did for servos)
   if (abs(joystickX - CENTER) > DEADZONE) {
     float targetAngle = (map(joystickX, 0, 180, (long)(MIN_ANGLE_X * 100), (long)(MAX_ANGLE_X * 100)) / 100.0) * MOVEMENT_SCALE;
     targetAngle = constrain(targetAngle, MIN_ANGLE_X, MAX_ANGLE_X);
@@ -160,10 +158,8 @@ void moveSteppers(uint8_t output[]) {
     long targetSteps = (long)(targetAngle * STEPS_PER_DEGREE);
     accelStepperY.moveTo(targetSteps);
   }
-
-  //track stepper position
   
-
+  //previously used code for moving steppers
   /* if (joystickX < CENTER - DEADZONE) {
     accelStepperX.setSpeed(SPEED_X);
   }
@@ -204,37 +200,29 @@ void loop() {
   WiFiClient client = server.available();
 
   if (client) {
-    Serial.println("Controller connected!");
+    //Serial.println("Controller connected!");
     
     while (client.connected()) {
       accelStepperX.run();
       accelStepperY.run();
+      
       if (client.available() >= 6) {  // Controller sends 6 bytes
-        Serial.println("Receiving data...");
+        //Serial.println("Receiving data...");
         uint8_t buff[6];
         client.readBytes(buff, 6);
         
-        Serial.print("Received: [");
+        /* Serial.print("Received: [");
         for (int i = 0; i < 6; i++) {
           Serial.print(buff[i]);
           if (i < 5) Serial.print(", ");
         }
-        Serial.println("]");
+        Serial.println("]"); */
         
         // Use first 2 values (packet[0] and packet[1]) for the joystick
         moveSteppers(buff);
         lastPacketMillis = millis();
         failsafeActive = false;
-      } /* else {
-        // Check for timeout
-        if (millis() - lastPacketMillis > PACKET_TIMEOUT_MS && !failsafeActive) {
-          Serial.println("Failsafe: No data timeout! Stopping steppers.");
-          accelStepperX.setSpeed(0);
-          accelStepperY.setSpeed(0);
-          failsafeActive = true;
-        }
-      } */
-      delay(DELAY_MS);
+      }
     }
     
     Serial.println("Controller disconnected.");
