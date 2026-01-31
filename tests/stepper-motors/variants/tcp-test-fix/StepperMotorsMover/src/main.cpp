@@ -26,8 +26,8 @@ const int STEP_PIN_2 = 9;
 const int DIR_PIN_2 = 10;
 
 // ---- Other constants ----
-const int DEADZONE = 10;
-const int CENTER = 90;
+const int DEADZONE = 30;
+const int CENTER = 512;
 const int SPEED_X = 500;
 const int SPEED_Y = 200;
 const int ACCELERATION_X = 1000;
@@ -47,7 +47,6 @@ const float STEPS_PER_DEGREE = (STEPS_PER_REV * MICROSTEPS) / 360.0;
 
 
 // ---- Steppers ----
-//int speed = 30; // RPM
 AccelStepper accelStepperX(AccelStepper::DRIVER, STEP_PIN_1, DIR_PIN_1);
 AccelStepper accelStepperY(AccelStepper::DRIVER, STEP_PIN_2, DIR_PIN_2);
 
@@ -74,29 +73,24 @@ bool failsafeActive = false;
 void setup() {
   // Initialize serial and wait for port to open:
   Serial.begin(9600);
-  while (!Serial)
-  {
+  while (!Serial) {
       ; // wait for serial port to connect. Needed for native USB port only
   }
 
   // check for the WiFi module:
-  if (WiFi.status() == WL_NO_MODULE)
-  {
+  if (WiFi.status() == WL_NO_MODULE) {
       Serial.println("Communication with WiFi module failed!");
-      // don't continue
       while (true)
           ;
   }
 
   String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION)
-  {
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
       Serial.println("Please upgrade the firmware");
   }
 
   // attempt to connect to WiFi network:
-  while (status != WL_CONNECTED)
-  {
+  while (status != WL_CONNECTED) {
       Serial.print("Attempting to connect to SSID: ");
       Serial.println(ssid);
       // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
@@ -107,17 +101,12 @@ void setup() {
       Serial.print(status);
       Serial.print("\n");
 
-      // wait 10 seconds for connection:
-      delay(5000);
+      delay(10000); //wait for connection (was 10s, shortened to 5s?)
   }
   Serial.println("Connected to WiFi");
-
   Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
   server.begin();
   Serial.println("TCP server started, waiting for Controller...");
-
-  // initialize packet timer
   lastPacketMillis = millis();
 
   pinMode(EN_PIN_1, OUTPUT);
@@ -136,15 +125,10 @@ void setup() {
 }
 
 void moveSteppers(uint8_t output[]) {
-  int joystickX = output[0];
-  int joystickY = output[1];
-  
-  /* Serial.print("JoystickX: ");
-  Serial.println(joystickX);
-  Serial.print("JoystickY: ");
-  Serial.println(joystickY); */
+  int joystickX = output[0] * 4;
+  int joystickY = output[1] * 4;
 
-  //new code for moving steppers passing position angles to mover (like we did for servos)
+  /* //new code for moving steppers passing position angles to mover (like we did for servos)
   if (abs(joystickX - CENTER) > DEADZONE) {
     float targetAngle = (map(joystickX, 0, 180, (long)(MIN_ANGLE_X * 100), (long)(MAX_ANGLE_X * 100)) / 100.0) * MOVEMENT_SCALE;
     targetAngle = constrain(targetAngle, MIN_ANGLE_X, MAX_ANGLE_X);
@@ -157,10 +141,10 @@ void moveSteppers(uint8_t output[]) {
     targetAngle = constrain(targetAngle, MIN_ANGLE_Y, MAX_ANGLE_Y);
     long targetSteps = (long)(targetAngle * STEPS_PER_DEGREE);
     accelStepperY.moveTo(targetSteps);
-  }
+  } */
   
   //previously used code for moving steppers
-  /* if (joystickX < CENTER - DEADZONE) {
+  if (joystickX < CENTER - DEADZONE) {
     accelStepperX.setSpeed(SPEED_X);
   }
   else if (joystickX > CENTER + DEADZONE) {
@@ -180,6 +164,10 @@ void moveSteppers(uint8_t output[]) {
     accelStepperY.setSpeed(0);
   }
 
+  accelStepperX.runSpeed();
+  accelStepperY.runSpeed();
+
+  /*
   long posX = accelStepperX.currentPosition();
   long posY = accelStepperY.currentPosition();
 
@@ -194,17 +182,17 @@ void moveSteppers(uint8_t output[]) {
 }
 
 void loop() {
-  accelStepperX.run();
-  accelStepperY.run();
+  //accelStepperX.runSpeed();
+  //accelStepperY.runSpeed();
 
   WiFiClient client = server.available();
 
   if (client) {
-    //Serial.println("Controller connected!");
+    Serial.println("Controller connected!");
     
     while (client.connected()) {
-      accelStepperX.run();
-      accelStepperY.run();
+      //accelStepperX.runSpeed();
+      //accelStepperY.runSpeed();
       
       if (client.available() >= 6) {  // Controller sends 6 bytes
         //Serial.println("Receiving data...");
@@ -215,7 +203,7 @@ void loop() {
         for (int i = 0; i < 6; i++) {
           Serial.print(buff[i]);
           if (i < 5) Serial.print(", ");
-        }
+        } 
         Serial.println("]"); */
         
         // Use first 2 values (packet[0] and packet[1]) for the joystick
@@ -228,5 +216,4 @@ void loop() {
     Serial.println("Controller disconnected.");
     client.stop();
   }
-
 }

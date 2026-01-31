@@ -2,12 +2,12 @@
 
 // This code is for the sender of rotation coordinates to the arduino
 
-#define SERVO_1_ANALOG A4
-#define SERVO_2_ANALOG A5
-#define SERVO_3_ANALOG A1
-#define SERVO_4_ANALOG A0
-#define SERVO_5_ANALOG A2
-#define SERVO_6_ANALOG A3
+#define STEPPER_1_ANALOG A4
+#define STEPPER_2_ANALOG A5
+#define STEPPER_3_ANALOG A1
+#define STEPPER_4_ANALOG A0
+#define STEPPER_5_ANALOG A2
+#define STEPPER_6_ANALOG A3
 
 const int UPDATE_DELAY_MILLIS = 1; // Delay for joystick updates
 
@@ -30,63 +30,41 @@ IPAddress accessPointIP(192, 168, 4, 1); // IP address of the access point
 unsigned int remotePort = 8888;          // local port to listen for UDP packets
 unsigned int localPort = 2390;           // local port to listen for UDP packets
 
-
 //haven't flashed yet, previous flash had different args passed
-JoystickReader joystickReaderServo1(0, 45, true);
-JoystickReader joystickReaderServo2(0, 135, true);
-JoystickReader joystickReaderServo3(90, 180, false);
-JoystickReader joystickReaderServo4(0, 180, false);
-JoystickReader joystickReaderServo5(90, 180, false); // Added joystick for servo5
-JoystickReader joystickReaderServo6(0, 180, false);  // Added joystick for servo6
+JoystickReader joystickReaderStepper1(0, 180, false);
+JoystickReader joystickReaderStepper2(0, 135, false);
+JoystickReader joystickReaderStepper3(90, 180, false);
+JoystickReader joystickReaderStepper4(0, 180, false);
+JoystickReader joystickReaderStepper5(90, 180, false);
+JoystickReader joystickReaderStepper6(0, 180, false);
 
-JoystickPair joystickPair1(&joystickReaderServo1, &joystickReaderServo2);
+/* JoystickPair joystickPair1(&joystickReaderServo1, &joystickReaderServo2);
 JoystickPair joystickPair2(&joystickReaderServo3, &joystickReaderServo4);
-JoystickPair joystickPair3(&joystickReaderServo5, &joystickReaderServo6);
+JoystickPair joystickPair3(&joystickReaderServo5, &joystickReaderServo6); */
 
 WiFiClient client;
-
 unsigned long lastUpdateMillis = 0;
 
 // Checks if the device is connected to the WiFi network
-bool isConnected()
-{
+bool isConnected() {
   return WiFi.status() == WL_AP_LISTENING || WiFi.status() == WL_AP_CONNECTED;
 }
 
 // Initialize all controller readers
-void initializeReaders()
-{
-
-  joystickReaderServo1.setUp(SERVO_1_ANALOG);
-  joystickReaderServo2.setUp(SERVO_2_ANALOG);
-  joystickReaderServo3.setUp(SERVO_3_ANALOG);
-  joystickReaderServo4.setUp(SERVO_4_ANALOG);
-  joystickReaderServo5.setUp(SERVO_5_ANALOG); // Added joystick setup for servo5
-  joystickReaderServo6.setUp(SERVO_6_ANALOG);
+void initializeReaders() {
+  joystickReaderStepper1.setUp(STEPPER_1_ANALOG);
+  joystickReaderStepper2.setUp(STEPPER_2_ANALOG);
+  joystickReaderStepper3.setUp(STEPPER_3_ANALOG);
+  joystickReaderStepper4.setUp(STEPPER_4_ANALOG);
+  joystickReaderStepper5.setUp(STEPPER_5_ANALOG);
+  joystickReaderStepper6.setUp(STEPPER_6_ANALOG);
 }
-
-// void debugPrintJoystickData(u_int8_t packet[], int n)
-// {
-//   if (!DEBUG_PRINTS)
-//     return;
-//   Serial.print("Sending joystick data: ");
-//   for (int i = 0; i < n; i++)
-//   {
-//     Serial.print(packet[i]);
-//     if (i < n - 1)
-//       Serial.print(", ");
-//   }
-//   Serial.println();
-// }
 
 // Sends the joystick data as an encoded integer over UDP
 // The encoding combines the x and y coordinates into a single integer
 // The x coordinate is shifted left by 16 bits and combined with the y coordinate
-void sendJoystickData(uint8_t packet[], int n)
-{
+void sendJoystickData(uint8_t packet[], int n) {
   // Revert to original 6-byte payload format (no sequence numbers)
-  // debugPrintJoystickData(packet, n);
-
   if (client.connected()) {
     Serial.println("Client connected, sending...");
     client.write(packet, n);
@@ -94,8 +72,7 @@ void sendJoystickData(uint8_t packet[], int n)
   else {
     Serial.println("Client not connected, trying to reconnect...");
     client.stop();
-    while (!client.connect(stationIP, remotePort))
-    {
+    while (!client.connect(stationIP, remotePort)) {
       Serial.println("Reconnecting...");
       delay(1000);
     }
@@ -104,135 +81,77 @@ void sendJoystickData(uint8_t packet[], int n)
 }
 
 // The main communication loop for sending joystick data over UDP
-void mainCommunicationLoop()
-{
-  if (!isConnected())
-  {
+void mainCommunicationLoop() {
+  if (!isConnected()) {
     Serial.print("Not connected to WiFi. Status: ");
     Serial.println(WiFi.status());
     return;
   }
-  unsigned long currentMillis = millis();
+  /* unsigned long currentMillis = millis();
   uint8_t packet[PACKET_SIZE] = {0, 0, 0, 0, 0, 0};
-  joystickPair1.updateBothJoysticksMax(currentMillis, &packet[0]);
-  joystickPair2.updateBothJoysticksMax(currentMillis, &packet[2]);
-  joystickPair3.updateBothJoysticksMax(currentMillis, &packet[4]);
-  if (currentMillis - lastUpdateMillis < UPDATE_DELAY_MILLIS)
-  {
+  if (currentMillis - lastUpdateMillis < UPDATE_DELAY_MILLIS) {
     return; // Skip this loop iteration if the delay hasn't passed
   }
   lastUpdateMillis = currentMillis;
 
   //// ----- ////// new code to send stuff to the mover
   bool changed = false;
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < PACKET_SIZE; i++) {
     // if there as been difference
-    if (packet[i] != lastSentPacket[i])
-    {
+    if (packet[i] != lastSentPacket[i]) {
       changed = true;
       break;
     }
   }
 
-  if (changed)
-  {
-    memcpy(lastSentPacket, packet, 6); // copy the packets
-    sendJoystickData(packet, 6); // send the packets
+  if (changed) {
+    memcpy(lastSentPacket, packet, PACKET_SIZE); // copy the packets
+    sendJoystickData(packet, PACKET_SIZE); // send the packets
+  } */
 
-    for (int i = 0; i < 6; i++)
-    {
-      // Serial.print(packet[i]);
-      // Serial.print(" ");
-    }
-    // Serial.println();
-  }
-
-  /// --- /// new code to send stuff to the mover
-}
-
-// Prints the WiFi status to the serial monitor
-void printWiFiStatus()
-{
-
-  // print the SSID of the network you're attached to:
-
-  // Serial.print("SSID: ");
-
-  // Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address:
-
-  IPAddress ip = WiFi.localIP();
-
-  // Serial.print("IP Address: ");
-
-  // Serial.println(ip);
+  uint8_t packet[PACKET_SIZE] = {analogRead(STEPPER_1_ANALOG) / 4, 
+    analogRead(STEPPER_2_ANALOG) / 4,
+    analogRead(STEPPER_3_ANALOG) / 4,
+    analogRead(STEPPER_4_ANALOG) / 4,
+    analogRead(STEPPER_5_ANALOG) / 4,
+    analogRead(STEPPER_6_ANALOG) / 4};
+  sendJoystickData(packet, PACKET_SIZE);
 }
 
 void setup() {
-
   // Initialize serial and wait for port to open:
-
   Serial.begin(9600);
-
-  while (!Serial)
-  {
-
+  while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-
   initializeReaders();
 
-  // Serial.println("Access Point Web Server");
-
-  // check for the WiFi module:
-  if (WiFi.status() == WL_NO_MODULE)
-  {
+  if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed!");
-    // don't continue
     while (true)
       ;
   }
 
   String fv = WiFi.firmwareVersion();
-
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION)
-  {
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
     Serial.println("Please upgrade the firmware");
   }
 
   // by default the local IP address will be 192.168.4.1
   WiFi.config(accessPointIP);
-
-  // print the network name (SSID);
   Serial.print("Creating access point named: ");
   Serial.println(ssid);
+  status = WiFi.beginAP(ssid, pass); //Create open network
 
-  // Create open network. Change this line if you want to create an WEP network:
-
-  status = WiFi.beginAP(ssid, pass);
-
-  if (status != WL_AP_LISTENING)
-  {
+  if (status != WL_AP_LISTENING) {
     Serial.println("Creating access point failed");
-    // don't continue
     while (true)
       ;
   }
-
-  // wait 10 seconds for connection:
-  delay(10000);
+  delay(10000); // wait 10 seconds for connection:
 
   // start the web server on port 80
-
-  // you're connected now, so print out the status
-
-  printWiFiStatus();
-
-  while (!client.connect(stationIP, remotePort))
-  {
-    // Serial.println("Connecting to Mover...");
+  while (!client.connect(stationIP, remotePort)) {
     delay(1000);
   }
   Serial.println("Connected to Mover!");
@@ -240,23 +159,8 @@ void setup() {
 
 void loop()
 {
-  // compare the previous status to the current status
-
-  if (status != WiFi.status())
-  {
-    // it has changed update the variable
+  if (status != WiFi.status()) {
     status = WiFi.status();
-
-    if (status == WL_AP_CONNECTED)
-    {
-      // a device has connected to the AP
-      // Serial.println("Device connected to AP");
-    }
-    else
-    {
-      // a device has disconnected from the AP, and we are back in listening mode
-      // Serial.println("Device disconnected from AP");
-    }
   }
   mainCommunicationLoop();
 }
