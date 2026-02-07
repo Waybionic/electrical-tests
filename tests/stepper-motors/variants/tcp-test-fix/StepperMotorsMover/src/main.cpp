@@ -1,20 +1,9 @@
-//Mover = TCP Server
-
-//Current issues
-//Joystick values aren't stable so the stepper motor isn't staying stable
-  //To do: add deadzones to every location the steppers is in
-  //so minimal joystick movements don't move the stepper
-//Stepper movement itself is slow itself (slow on Korede's part as well even without TCP)
-  //To do: figure out which constants to adjust to move steppers as fast as possible
-//Initial TCP handshake + connection time takes about 10 seconds
-  //To do: find ways to minimize this handshake time
-//Delays: controller needs to be held for a long time to go from 0 to 180
-  //To do: either increase speed of controller values going up or control acceleration
-//Delays: a bit of a pause after letting go of controller 
+// Mover = UDP Receiver (was TCP Server)
+// No handshake, no connection overhead — just fire-and-forget datagrams.
 
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <AccelStepper.h>
-#include <Stepper.h>
 
 // ---- Stepper pins ----
 const int EN_PIN_1 = 4;
@@ -28,87 +17,61 @@ const int DIR_PIN_2 = 10;
 // ---- Other constants ----
 const int DEADZONE = 30;
 const int CENTER = 512;
-const int SPEED_X = 500;
-const int SPEED_Y = 200;
-const int ACCELERATION_X = 1000;
-const int ACCELERATION_Y = 1000;
-const int MAX_SPEED_X = 800;
-const int MAX_SPEED_Y = 800;
-const float MIN_ANGLE_X = -135.0; //change depending on desired angle limits
-const float MAX_ANGLE_X = 135.0; //ditto
-const float MIN_ANGLE_Y = -135.0; //can test with negative values
-const float MAX_ANGLE_Y = 135.0;
-
-const float MOVEMENT_SCALE = 3; //>1 = faster, <1 = slower
-
-const int STEPS_PER_REV = 200;   // 200 for 1.8° motors, 400 for 0.9°
-const int MICROSTEPS = 4;        // Use microstepping! 1, 2, 4, 8, 16, 32 (set on driver)
-const float STEPS_PER_DEGREE = (STEPS_PER_REV * MICROSTEPS) / 360.0;
-
+const int SPEED_X = 2000;
+const int SPEED_Y = 2000;
+const int ACCELERATION_X = 4000;
+const int ACCELERATION_Y = 4000;
+const int MAX_SPEED_X = 6000;
+const int MAX_SPEED_Y = 6000;
 
 // ---- Steppers ----
 AccelStepper accelStepperX(AccelStepper::DRIVER, STEP_PIN_1, DIR_PIN_1);
 AccelStepper accelStepperY(AccelStepper::DRIVER, STEP_PIN_2, DIR_PIN_2);
 
-// ---- WiFi/UDP ----
+// ---- WiFi / UDP ----
 char ssid[] = "CHANGE_ME_SSID";
 char pass[] = "CHANGE_ME_PASSWORD";
 int status = WL_IDLE_STATUS;
 
 IPAddress stationIP(192, 168, 4, 2);  // Mover IP
-IPAddress gateway(192, 168, 4, 1); // Controller IP
-IPAddress subnet(255, 255, 255, 0);
+const unsigned int LOCAL_UDP_PORT = 5677;
 
-WiFiServer server(8888);
-WiFiClient client;
-unsigned int localPort = 8888;
+WiFiUDP udp;
 
-// ---- Failsafe: if no valid packets are received for this duration, stop updating steppers ----
-const unsigned long PACKET_TIMEOUT_MS = 1000; // 1s without data -> enter failsafe
+// ---- Failsafe ----
+const unsigned long PACKET_TIMEOUT_MS = 500; // 500ms without data -> stop motors
 unsigned long lastPacketMillis = 0;
 bool failsafeActive = false;
 
-#define DELAY_MS 10   // small delay between packets
+const int PACKET_SIZE = 6;
 
 void setup() {
-  // Initialize serial and wait for port to open:
   Serial.begin(9600);
-  while (!Serial) {
-      ; // wait for serial port to connect. Needed for native USB port only
-  }
+  while (!Serial) { ; }
 
-  // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
-      Serial.println("Communication with WiFi module failed!");
-      while (true)
-          ;
+    Serial.println("Communication with WiFi module failed!");
+    while (true) ;
   }
 
-  String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-      Serial.println("Please upgrade the firmware");
-  }
-
-  // attempt to connect to WiFi network:
+  // Connect to the Controller's access point
+  WiFi.config(stationIP);
   while (status != WL_CONNECTED) {
-      Serial.print("Attempting to connect to SSID: ");
-      Serial.println(ssid);
-      // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-      WiFi.config(stationIP);
-      status = WiFi.begin(ssid, pass);
-
-      Serial.print("Wifi.status() after begin(): ");
-      Serial.print(status);
-      Serial.print("\n");
-
-      delay(10000); //wait for connection (was 10s, shortened to 5s?)
+    Serial.print("Connecting to AP: ");
+    Serial.println(ssid);
+    status = WiFi.begin(ssid, pass);
+    delay(3000);  // shorter retry than before
   }
-  Serial.println("Connected to WiFi");
-  Serial.println("\nStarting connection to server...");
-  server.begin();
-  Serial.println("TCP server started, waiting for Controller...");
+  Serial.println("WiFi connected!");
+
+  // Start listening for UDP packets
+  udp.begin(LOCAL_UDP_PORT);
+  Serial.print("UDP listening on port ");
+  Serial.println(LOCAL_UDP_PORT);
+
   lastPacketMillis = millis();
 
+  // Stepper enable pins
   pinMode(EN_PIN_1, OUTPUT);
   pinMode(EN_PIN_2, OUTPUT);
   digitalWrite(EN_PIN_1, LOW);
@@ -118,7 +81,7 @@ void setup() {
   accelStepperX.setMaxSpeed(MAX_SPEED_X);
   accelStepperX.setAcceleration(ACCELERATION_X);
   accelStepperX.setCurrentPosition(0);
-  
+
   accelStepperY.setMaxSpeed(MAX_SPEED_Y);
   accelStepperY.setAcceleration(ACCELERATION_Y);
   accelStepperY.setCurrentPosition(0);
@@ -128,92 +91,63 @@ void moveSteppers(uint8_t output[]) {
   int joystickX = output[0] * 4;
   int joystickY = output[1] * 4;
 
-  /* //new code for moving steppers passing position angles to mover (like we did for servos)
-  if (abs(joystickX - CENTER) > DEADZONE) {
-    float targetAngle = (map(joystickX, 0, 180, (long)(MIN_ANGLE_X * 100), (long)(MAX_ANGLE_X * 100)) / 100.0) * MOVEMENT_SCALE;
-    targetAngle = constrain(targetAngle, MIN_ANGLE_X, MAX_ANGLE_X);
-    long targetSteps = (long)(targetAngle * STEPS_PER_DEGREE);
-    accelStepperX.moveTo(targetSteps);
-  }
-  
-  if (abs(joystickY - CENTER) > DEADZONE) {
-    float targetAngle = (map(joystickY, 0, 180, (long)(MIN_ANGLE_Y * 100), (long)(MAX_ANGLE_Y * 100)) / 100.0) * MOVEMENT_SCALE;
-    targetAngle = constrain(targetAngle, MIN_ANGLE_Y, MAX_ANGLE_Y);
-    long targetSteps = (long)(targetAngle * STEPS_PER_DEGREE);
-    accelStepperY.moveTo(targetSteps);
-  } */
-  
-  //previously used code for moving steppers
+  // Scale speed proportionally to joystick deflection
   if (joystickX < CENTER - DEADZONE) {
-    accelStepperX.setSpeed(SPEED_X);
+    float scale = (float)(CENTER - joystickX) / CENTER;
+    accelStepperX.setSpeed(SPEED_X * scale);
   }
   else if (joystickX > CENTER + DEADZONE) {
-    accelStepperX.setSpeed(-SPEED_X);
+    float scale = (float)(joystickX - CENTER) / CENTER;
+    accelStepperX.setSpeed(-SPEED_X * scale);
   }
   else {
     accelStepperX.setSpeed(0);
   }
 
   if (joystickY < CENTER - DEADZONE) {
-    accelStepperY.setSpeed(SPEED_Y);
+    float scale = (float)(CENTER - joystickY) / CENTER;
+    accelStepperY.setSpeed(SPEED_Y * scale);
   }
   else if (joystickY > CENTER + DEADZONE) {
-    accelStepperY.setSpeed(-SPEED_Y);
+    float scale = (float)(joystickY - CENTER) / CENTER;
+    accelStepperY.setSpeed(-SPEED_Y * scale);
   }
   else {
     accelStepperY.setSpeed(0);
   }
-
-  accelStepperX.runSpeed();
-  accelStepperY.runSpeed();
-
-  /*
-  long posX = accelStepperX.currentPosition();
-  long posY = accelStepperY.currentPosition();
-
-  if ((posX >= limit && accelStepperX.speed() > 0) || (posX <= -limit && accelStepperX.speed() < 0)) {
-      accelStepperX.setSpeed(0);
-  }
-  if ((posY >= limit && accelStepperY.speed() > 0) || (posY <= -limit && accelStepperY.speed() < 0)) {
-      accelStepperY.setSpeed(0);
-  }
-  accelStepperX.runSpeed();
-  accelStepperY.runSpeed(); */
 }
 
 void loop() {
-  //accelStepperX.runSpeed();
-  //accelStepperY.runSpeed();
+  // CRITICAL: drive steppers every iteration
+  accelStepperX.runSpeed();
+  accelStepperY.runSpeed();
 
-  WiFiClient client = server.available();
+  // Failsafe: stop motors if no data received recently
+  if (millis() - lastPacketMillis > PACKET_TIMEOUT_MS && !failsafeActive) {
+    accelStepperX.setSpeed(0);
+    accelStepperY.setSpeed(0);
+    failsafeActive = true;
+    Serial.println("Failsafe: no data, motors stopped.");
+  }
 
-  if (client) {
-    Serial.println("Controller connected!");
-    
-    while (client.connected()) {
-      //accelStepperX.runSpeed();
-      //accelStepperY.runSpeed();
-      
-      if (client.available() >= 6) {  // Controller sends 6 bytes
-        //Serial.println("Receiving data...");
-        uint8_t buff[6];
-        client.readBytes(buff, 6);
-        
-        /* Serial.print("Received: [");
-        for (int i = 0; i < 6; i++) {
-          Serial.print(buff[i]);
-          if (i < 5) Serial.print(", ");
-        } 
-        Serial.println("]"); */
-        
-        // Use first 2 values (packet[0] and packet[1]) for the joystick
-        moveSteppers(buff);
-        lastPacketMillis = millis();
-        failsafeActive = false;
-      }
+  // Drain all queued UDP packets, use the latest one
+  uint8_t latestBuff[PACKET_SIZE];
+  bool gotPacket = false;
+
+  int packetLen = udp.parsePacket();
+  while (packetLen > 0) {
+    if (packetLen >= PACKET_SIZE) {
+      udp.read(latestBuff, PACKET_SIZE);
+      gotPacket = true;
     }
-    
-    Serial.println("Controller disconnected.");
-    client.stop();
+    // Discard any remaining bytes in this datagram
+    udp.flush();
+    packetLen = udp.parsePacket();  // check for another queued packet
+  }
+
+  if (gotPacket) {
+    moveSteppers(latestBuff);
+    lastPacketMillis = millis();
+    failsafeActive = false;
   }
 }
