@@ -1,0 +1,20 @@
+{
+  "base_height": "70",
+  "shoulder_offset": "25",
+  "upper_arm": "120",
+  "forearm": "50",
+  "tool_inline": "0",
+  "target_x": "190",
+  "target_y": "0",
+  "target_z": "70",
+  "base_zero": "33.5",
+  "shoulder_zero": "112.5",
+  "elbow_zero": "151.5",
+  "base_direction": "1",
+  "shoulder_direction": "-1",
+  "elbow_direction": "1",
+  "joint4": "27.5",
+  "move_seconds": "3",
+  "jog_degrees": "3",
+  "elbow_solution": "Negative"
+}
