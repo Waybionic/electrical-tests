@@ -10,7 +10,8 @@ their original Git histories and timestamps.
 | `l298n/` | Aug 12–19, 2025 | Early Arduino/L298N stepper experiments |
 | `stepper-motors/` | Sep 6, 2025–Feb 7, 2026 | Multi-stepper, controller, TCP/UDP, limits, and motion experiments |
 | `joystick-steppers/` | Jan 17–24, 2026 | Joystick-driven top-stepper tests |
-| `can-bus/` | Source repository created Sep 19, 2026 | No tracked test files were present to import |
+| `servo-ik/` | Aug 22–Sep 5, 2026 | Uno R4 servo GUI, motion demo, IK calibration controller, and offline sweep tests |
+| `can-bus/` | Sep 26, 2026 | Reconstructed Arduino MCP2515, two-node, and servo CAN demonstrations |
 | `mark4/` | Source repository created Sep 5, 2026 | No tracked test files were present to import |
 
 Every populated directory was imported from its original repository without

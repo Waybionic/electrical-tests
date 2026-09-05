@@ -18,6 +18,7 @@ Git histories.
 | Servo Mk2 controller | Sep 7, 2025 | [`tests/servo-mk2`](tests/servo-mk2) |
 | Multi-stepper and controller variants | Sep 6, 2025–Feb 7, 2026 | [`tests/stepper-motors`](tests/stepper-motors) |
 | Joystick-driven steppers | Jan 17–24, 2026 | [`tests/joystick-steppers`](tests/joystick-steppers) |
+| Servo GUI and inverse-kinematics prototype | Aug 22–Sep 5, 2026 | [`tests/servo-ik`](tests/servo-ik) |
 | Arduino CAN demo tests | Sep 26, 2026 | [`tests/can-bus`](tests/can-bus) |
 | Mark 4 placeholder | Source repo created Sep 5, 2026; no commits | [`tests/mark4`](tests/mark4) |
 
