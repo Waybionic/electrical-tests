@@ -32,6 +32,8 @@ between CANH and CANL when both 120-ohm end terminators are installed.
 | `led_blink_transmitter` / `led_blink_receiver` | Periodically send ON/OFF frames and verify two-node communication |
 | `servo_sequence_master` / `servo_sequence_node2` | Alternate two D9 servos across the CAN bus |
 | `FIVE_NODE_EMULATOR_NOTES.md` | Design for emulating five MKS SERVO42D addresses with the two-node bench hardware |
+| `mks-j1-bringup` | Confirmed ID 1 MKS enable and speed-mode bring-up from October 3, 2026 |
+| `mks-three-joint-console-experimental` | Clearly labeled experimental terminal console for J1/J2/J3 |
 
 The MCP_CAN_lib sketches assume **MCP_CAN_lib by Cory J. Fowler**, 500 kbps,
 and an 8 MHz MCP2515 oscillator. Confirm the crystal marking before use.
