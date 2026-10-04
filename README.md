@@ -20,7 +20,7 @@ Git histories.
 | Joystick-driven steppers | Jan 17–24, 2026 | [`tests/joystick-steppers`](tests/joystick-steppers) |
 | Servo GUI and inverse-kinematics prototype | Aug 22–Sep 5, 2026 | [`tests/servo-ik`](tests/servo-ik) |
 | Arduino CAN demo tests | Sep 26, 2026 | [`tests/can-bus`](tests/can-bus) |
-| MKS CAN motor bring-up and terminal console | Oct 3, 2026 | [`tests/can-bus/mks-j1-bringup`](tests/can-bus/mks-j1-bringup) and [`tests/can-bus/mks-three-joint-console-experimental`](tests/can-bus/mks-three-joint-console-experimental) |
+| MKS CAN motor bring-up and terminal consoles | Oct 3, 2026 | [`tests/can-bus/original_oct3_chat`](tests/can-bus/original_oct3_chat), [`tests/can-bus/mks-j1-bringup`](tests/can-bus/mks-j1-bringup), and [`tests/can-bus/mks-three-joint-console-experimental`](tests/can-bus/mks-three-joint-console-experimental) |
 | Mark 4 placeholder | Source repo created Sep 5, 2026; no commits | [`tests/mark4`](tests/mark4) |
 
 The StepperMotors archive includes the main line plus the controller,

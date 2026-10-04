@@ -33,6 +33,7 @@ between CANH and CANL when both 120-ohm end terminators are installed.
 | `servo_sequence_master` / `servo_sequence_node2` | Alternate two D9 servos across the CAN bus |
 | `FIVE_NODE_EMULATOR_NOTES.md` | Design for emulating five MKS SERVO42D addresses with the two-node bench hardware |
 | `mks-j1-bringup` | Confirmed ID 1 MKS enable and speed-mode bring-up from October 3, 2026 |
+| `original_oct3_chat` | Complete original three-motor console recovered verbatim from the October 3 chat |
 | `mks-three-joint-console-experimental` | Clearly labeled experimental terminal console for J1/J2/J3 |
 
 The MCP_CAN_lib sketches assume **MCP_CAN_lib by Cory J. Fowler**, 500 kbps,

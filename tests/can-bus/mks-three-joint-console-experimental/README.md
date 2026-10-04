@@ -67,9 +67,9 @@ are documented in [`../mks-j1-bringup`](../mks-j1-bringup).
 4. Validate `estop` and `relative` separately; do not infer those paths are
    working from the earlier `F3`/`F6` result.
 
-## Recovery note
+## Source relationship
 
-The Arduino IDE temporary path recorded during the session still exists, but
-the file contains only the empty Arduino template. These sketches are therefore
-a conservative reconstruction from the recorded command bytes and observed
-responses, not a copy of a complete saved original.
+The complete October 3 chat sketch was subsequently recovered and is preserved
+verbatim in [`../original_oct3_chat`](../original_oct3_chat). This folder is an
+intentional cleaned variant: it removes automatic startup commands and replaces
+the original single-character menu with descriptive line commands.
